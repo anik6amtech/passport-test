@@ -6,35 +6,44 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+
+            // Common Info
             $table->string('name');
-            $table->string('email')->unique();
+            $table->string('email')->nullable();
+            $table->string('phone')->nullable();
+            $table->enum('user_type', ['admin', 'customer', 'supplier', 'deliveryman', 'vendor'])->index();
+
+            // Authentication
+            $table->string('password')->nullable();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->timestamp('phone_verified_at')->nullable();
             $table->rememberToken();
+
+            // Status
+            $table->boolean('is_active')->default(true);
+
+            // Unique constraint per user type (not globally)
+            $table->unique(['email', 'user_type']);
+            $table->unique(['phone', 'user_type']);
+
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
-            $table->string('email')->primary();
+            $table->string('email')->index();
             $table->string('token');
             $table->timestamp('created_at')->nullable();
         });
-
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
     }
 };
