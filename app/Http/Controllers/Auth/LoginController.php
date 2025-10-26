@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
@@ -90,36 +91,19 @@ class LoginController extends Controller
      */
     private function attemptLogin($credentials, $userType)
     {
-        // For demonstration purposes, we'll use simple hardcoded credentials
-        // In a real application, you would authenticate against your database
+        // Find user by email and user_type
+        $user = \App\Models\User::where('email', $credentials['email'])
+                                ->where('user_type', $userType)
+                                ->where('is_active', true)
+                                ->first();
 
-        $demoCredentials = [
-            'admin' => [
-                'email' => 'admin@example.com',
-                'password' => 'admin123'
-            ],
-            'customer' => [
-                'email' => 'customer@example.com',
-                'password' => 'customer123'
-            ],
-            'deliveryman' => [
-                'email' => 'delivery@example.com',
-                'password' => 'delivery123'
-            ],
-            'supplier' => [
-                'email' => 'supplier@example.com',
-                'password' => 'supplier123'
-            ]
-        ];
-
-        if (isset($demoCredentials[$userType])) {
-            $demo = $demoCredentials[$userType];
-            if ($credentials['email'] === $demo['email'] && $credentials['password'] === $demo['password']) {
-                // Store user type in session
-                session(['user_type' => $userType]);
-                session(['user_email' => $credentials['email']]);
-                return true;
-            }
+        if ($user && Hash::check($credentials['password'], $user->password)) {
+            // Store user information in session
+            session(['user_type' => $userType]);
+            session(['user_email' => $credentials['email']]);
+            session(['user_id' => $user->id]);
+            session(['user_name' => $user->name]);
+            return true;
         }
 
         return false;
