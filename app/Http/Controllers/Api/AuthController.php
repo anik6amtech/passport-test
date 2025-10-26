@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -66,13 +67,7 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Login successful',
             'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'user_type' => $user->user_type,
-                    'phone' => $user->phone,
-                ],
+                'user' => $user,
                 'access_token' => $token,
                 'token_type' => 'Bearer',
                 'guard' => $guardName,
@@ -107,36 +102,43 @@ class AuthController extends Controller
     }
 
     /**
-     * Get authenticated user info
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * Get authenticated user information
      */
-    public function user(Request $request)
+    public function user(Request $request): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $request->user()
+        ], 200);
+    }
+
+    /**
+     * Get user info extracted from token (id, name, email, phone, user_type)
+     */
+    public function userInfo(Request $request): JsonResponse
     {
         $user = $request->user();
         
-        if ($user) {
+        if (!$user) {
             return response()->json([
-                'success' => true,
-                'data' => [
-                    'user' => [
-                        'id' => $user->id,
-                        'name' => $user->name,
-                        'email' => $user->email,
-                        'user_type' => $user->user_type,
-                        'phone' => $user->phone,
-                        'email_verified_at' => $user->email_verified_at,
-                        'phone_verified_at' => $user->phone_verified_at,
-                        'is_active' => $user->is_active,
-                    ]
-                ]
-            ], 200);
+                'success' => false,
+                'message' => 'User not authenticated'
+            ], 401);
         }
 
+        // Extract specific user information as requested
+        $userInfo = [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'user_type' => $user->user_type,
+        ];
+
         return response()->json([
-            'success' => false,
-            'message' => 'User not authenticated'
-        ], 401);
+            'success' => true,
+            'message' => 'User information extracted from token',
+            'data' => $userInfo
+        ], 200);
     }
 }
